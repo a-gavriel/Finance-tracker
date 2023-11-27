@@ -6,10 +6,9 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from email_parser import *
+import base64
 from bs4 import BeautifulSoup 
-import lxml.html as lh
-import base64 
-import html
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
@@ -45,25 +44,19 @@ def main():
     service = build("gmail", "v1", credentials=creds)
     
     # request a list of all the messages 
-    result = service.users().messages().list(maxResults=50, userId='me', q='label:Bancos').execute() 
+    result = service.users().messages().list(maxResults=5, userId='me', q='label:Bancos').execute() 
     
     # We can also pass maxResults to get any number of emails. Like this: 
     # result = service.users().messages().list(maxResults=200, userId='me').execute() 
     messages = result.get('messages') 
     
     # messages is a list of dictionaries where each dictionary contains a message id. 
-    i = 0
     # iterate through all the messages 
     for msg in messages:       
-      
-
       # Get the message from its id 
-      txt = service.users().messages().get(userId='me', id=msg['id']).execute() 
-    
-      
-      # Get value of 'payload' from dictionary 'txt' 
-      payload = txt['payload'] 
-      headers = payload['headers'] 
+      msg_data = service.users().messages().get(userId='me', id=msg['id']).execute() 
+
+      headers = msg_data['payload']['headers'] 
   
       # Look for Subject and Sender Email in the headers 
       for d in headers: 
@@ -81,25 +74,20 @@ def main():
         # The Body of the message is in Encrypted format. So, we have to decode it. 
         # Get the data and decode it with base 64 decoder. 
 
-        data = txt['payload']['body']['data']
-        #data = data.replace("-","+").replace("_","/") 
-        decoded_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
-    
-        body = decoded_data 
-        body = BeautifulSoup(body, "lxml").text.replace("&nbsp","\n")
+        encoded_body = msg_data['payload']['body']['data']
+        decoded_body = base64.urlsafe_b64decode(encoded_body.encode('UTF-8'))
+        body = BeautifulSoup(decoded_body, "lxml").text.replace("&nbsp","\n")
     
       except: 
         pass
 
       finally:
         # Printing the subject, sender's email and message 
-        if "scotiabank" in sender.lower():
-          i = i + 1
-          print(i)
+        if ("scotiabank" in sender.lower()) and ("alerta transacción tarjeta" in subject.lower()):
           print("Subject: ", subject) 
           print("From: ", sender) 
           print('Date:', date_text)
-          print("Body:" , body)
+          print('Values', parse_email(body, "scotiabank"))
           print('\n') 
 
   except HttpError as error:
