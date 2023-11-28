@@ -57,17 +57,17 @@ def main():
       msg_data = service.users().messages().get(userId='me', id=msg['id']).execute() 
 
       headers = msg_data['payload']['headers'] 
-  
+      current_email = Email()
       # Look for Subject and Sender Email in the headers 
       for d in headers: 
         if d['name'] == 'Subject': 
-          subject = d['value'] 
+          current_email.subject = d['value'] 
         if d['name'] == 'From': 
-          sender = d['value'] 
+          current_email.sender = d['value'] 
         if d['name'] == "Date":
-          date_text = d['value']
+          current_email.date_str = d['value']
 
-      body = "Not decripted"
+      current_email.body = "Not decripted"
 
       # Use try-except to avoid any Errors 
       try: 
@@ -76,19 +76,16 @@ def main():
 
         encoded_body = msg_data['payload']['body']['data']
         decoded_body = base64.urlsafe_b64decode(encoded_body.encode('UTF-8'))
-        body = BeautifulSoup(decoded_body, "lxml").text.replace("&nbsp","\n")
+        current_email.body = BeautifulSoup(decoded_body, "lxml").text.replace("&nbsp","\n")
     
       except: 
         pass
 
       finally:
         # Printing the subject, sender's email and message 
-        if ("scotiabank" in sender.lower()) and ("alerta transacción tarjeta" in subject.lower()):
-          print("Subject: ", subject) 
-          print("From: ", sender) 
-          print('Date:', date_text)
-          print('Values', parse_email(body, "scotiabank"))
-          print('\n') 
+        if ("scotiabank" in current_email.sender.lower()) and ("alerta transacción tarjeta" in current_email.subject.lower()):
+          parse_email(current_email, "scotiabank")
+          print(current_email)
 
   except HttpError as error:
     # TODO(developer) - Handle errors from gmail API.
