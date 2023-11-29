@@ -38,10 +38,10 @@ def parse_email(email : Email, bank : str)-> None:
 
   body : can be enconded or plain text, depends on the bank
   """
-  parse_fn = bank_specs_dict.get(bank, None)
-  if not parse_email:
+  if bank not in bank_specs_dict:
     raise("Error bank not found")
   
+  parse_fn = bank_specs_dict[bank]
   description, date, price = parse_fn(email.body)
 
   email.transaction_description = description
