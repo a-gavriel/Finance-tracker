@@ -8,13 +8,131 @@ from googleapiclient.errors import HttpError
 
 from email_parser import *
 import base64
-from bs4 import BeautifulSoup 
+from bs4 import BeautifulSoup
+import re
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 
+def set_options() -> tuple[int,str]:
+  while True:
+    result = define_options()
+    print("\n----------------------")
+    print(f"Selected options:\n  max results:\t{result[0]}\n  query:\t{result[1]}")
+    print("\n----------------------\n")
+    resume = input("Continue (y/n):").lower().strip()
+    if resume[0] == "y":
+      break
+  
+  return result
 
+def define_options() -> tuple[int,str]:
+  max_results : int = 100
+  read_option : str = ""
+  label_option : str = ""
+  filter_date_1 : str = ""
+  filter_date_2 : str = ""
+  while True:
+    try:
+      max_results = int(input("Max results [max=500]:").strip())
+      if max_results < 1 or max_results > 500:
+        raise Exception("Must be between 1 and 500")
+      else:
+        break
+    except Exception:
+      print("Invalid input. Please try again!")
+
+  while True:
+    try:
+      option = int(input("Filter (read[1] / unread[2] / any[3]):").strip())
+      if option == 1:
+        read_option = "is:read"
+      elif option == 2:
+        read_option = "is:unread"
+      elif option == 3:
+        read_option = ""
+      else:
+        raise Exception("Invalid input")
+      break
+    except ValueError:
+      print("Invalid input. Please try again!")
+  
+  while True:
+    try:
+      option = input("Filter by label? [y/n]:").lower().strip()
+      if (option[0] != 'y'):
+        break
+      else:
+        label_option = "label:" + input("Enter label name:").strip()
+      break
+    except ValueError:
+      print("Invalid input. Please try again!")
+
+  while True:
+    try:
+      print("Filtering by date can be done with: \n\t1)newer than n [d (days) / m (month)]\n\t2)after (date)")
+      option = int(input("Filter (newer than X [1] / after [2] / none [3]:").strip())
+      if option == 1:
+        option2 = input("Specify newer than <# of days>< d / m / y>  :").replace(" ","")
+        if re.match("\d+[dmy]", option2):
+          filter_date_1 = "newer_than:" + option2
+        else:
+          raise Exception("Invalid value")
+      elif option == 2:
+        option2 = input("Specify the day after which to search emails (yyyy/mm/dd):")
+        option2 = option2.replace("(", "").replace(")", "").replace(" ", "")
+        if re.match("\d{4}/\d{1,2}/\d{1,2}", option2):
+          filter_date_1 = "after:" + option2
+        else:
+          raise Exception("Invalid value")
+      elif option == 3:
+        filter_date_1 = ""
+      else:
+        raise Exception("Invalid value")
+      break
+    except ValueError:
+      print("Invalid input. Please try again!")
+  
+  while True:
+    try:
+      print("Filtering by date can be done with: \n\t1)older than n [d (days) / m (month)]\n\t2)before (date)")
+      option = int(input("Filter (older than X [1] / before [2] / none [3]:").strip())
+      if option == 1:
+        option2 = input("Specify older than: <# of days>< d / m / y>").replace(" ","")
+        if re.match("\d+[dmy]", option2):
+          filter_date_2 = "older_than:" + option2
+        else:
+          raise Exception("Invalid value")
+      elif option == 2:
+        option2 = input("Specify the day before which to search emails (yyyy/mm/dd):")
+        option2 = option2.replace("(", "").replace(")", "").replace(" ", "")
+        if re.match("\d{4}/\d{1,2}/\d{1,2}", option2):
+          filter_date_2 = "before:" + option2
+        else:
+          raise Exception("Invalid value")
+      elif option == 3:
+        filter_date_2 = ""
+      else:
+        raise Exception("Invalid value")
+      break
+    except ValueError:
+      print("Invalid input. Please try again!")
+
+  query = ""
+  if read_option:
+    query += (read_option + " ")
+  if label_option:
+    query += (label_option + " ")
+  if filter_date_1:
+    query += (filter_date_1 + " ")
+  if filter_date_2:
+    query += (filter_date_2 + " ")
+
+  if query[-1] == " ":
+    query = query[0:-1]  # Remove last space
+    
+  return (max_results, query)
 
 def main():
   """Shows basic usage of the Gmail API.
@@ -76,7 +194,8 @@ def main():
 
         encoded_body = msg_data['payload']['body']['data']
         decoded_body = base64.urlsafe_b64decode(encoded_body.encode('UTF-8'))
-        current_email.body = BeautifulSoup(decoded_body, "lxml").text.replace("&nbsp","\n")
+        current_email.body = BeautifulSoup(decoded_body, "lxml").text
+        current_email.body = current_email.body.replace("&nbsp","\n")
     
       except: 
         pass
