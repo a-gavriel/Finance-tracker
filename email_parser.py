@@ -1,13 +1,5 @@
 import re
 class Email:
-  sender : str
-  subject : str
-  date_str : str
-  body : str
-  transaction_price_str : str
-  transaction_description : str
-  transaction_date_str : str
-
   def __init__(self):
     self.sender : str = ""
     self.subject : str = ""
@@ -16,6 +8,7 @@ class Email:
     self.transaction_price_str : str = ""
     self.transaction_description : str = ""
     self.transaction_date_str : str = ""
+    self.category : str = ""
 
   def __repr__(self) -> str:
     text : str = ""
@@ -25,29 +18,31 @@ class Email:
     text += "Description:\t" + self.transaction_description + "\n"
     text += "Price:\t" + self.transaction_price_str + "\n"
     text += "Date:\t" + self.transaction_date_str + "\n"
-    
+    text += "Category:\t" + self.category + "\n"
     return text
 
+def set_category(email : Email) -> None:
+  email.category = ""
+  return
 
 def parse_email(email : Email, bank : str)-> None:
   """
-  Reads the email and extracts a tuple with format:
+  Reads the email's body and sets its transaction's:
     description  : str
     date  : str
     price : str
-
-  body : can be enconded or plain text, depends on the bank
+    category : str
   """
-  if bank not in bank_specs_dict:
-    raise("Error bank not found")
+  if bank == "scotiabank":
+    parse_fn = parse_scotiabank
+  else:
+    raise Exception("Error bank not found")
   
-  parse_fn = bank_specs_dict[bank]
   description, date, price = parse_fn(email.body)
-
   email.transaction_description = description
   email.transaction_date_str = date
   email.transaction_price_str = price
-
+  set_category(email)
   return 
 
 def parse_scotiabank(text : str) -> tuple[str, str, str]:
@@ -84,7 +79,3 @@ def parse_scotiabank(text : str) -> tuple[str, str, str]:
   return result
 
 
-
-bank_specs_dict = {
-  "scotiabank" : parse_scotiabank
-}
