@@ -1,4 +1,6 @@
 import re
+from datetime import datetime
+
 class Email:
   def __init__(self):
     self.sender : str = ""
@@ -9,15 +11,24 @@ class Email:
     self.transaction_description : str = ""
     self.transaction_date_str : str = ""
     self.category : str = ""
+  
+  @property
+  def datetime(self):
+      date_time = datetime.strptime(self.date_str, "%d %b %Y %H:%M:%S %z")
+      return date_time.strftime("%Y-%m-%d_T%H-%M-%S")
+
+  @property
+  def date(self):
+      date = datetime.strptime(self.date_str, "%d %b %Y %H:%M:%S %z")
+      return date.strftime("%Y-%m-%d")
 
   def __repr__(self) -> str:
     text : str = ""
     text += "Sender:\t" + self.sender + "\n"
     text += "Subject:\t" + self.subject + "\n"
-    text += "Email date:\t" + self.date_str + "\n"
+    text += "Date:\t" + self.date + "\n"
     text += "Description:\t" + self.transaction_description + "\n"
     text += "Price:\t" + self.transaction_price_str + "\n"
-    text += "Date:\t" + self.transaction_date_str + "\n"
     text += "Category:\t" + self.category + "\n"
     return text
 

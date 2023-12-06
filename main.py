@@ -10,12 +10,16 @@ from email_parser import *
 import base64
 from bs4 import BeautifulSoup
 import re
+import csv
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 
 def set_options() -> tuple[int,str]:
+  if True:
+    return 20,"label:Bancos"
+
   while True:
     result = define_options()
     print("\n----------------------")
@@ -23,9 +27,20 @@ def set_options() -> tuple[int,str]:
     print("\n----------------------\n")
     resume = input("Continue (y/n):").lower().strip()
     if resume[0] == "y":
+      print("")
       break
   
   return result
+
+def export_emails_to_csv(email_list : list[Email]) -> None:
+  headers = ["Date", "Description", "Category", "Price"]
+  with open('Emails_output.csv', 'w', newline='', encoding='utf-8') as f:
+    csv_writer = csv.writer(f)
+    csv_writer.writerow(headers)
+    for email in email_list:
+      temp_row = [email.date, email.transaction_description, email.category, email.transaction_price_str]
+      csv_writer.writerow(temp_row)
+  return
 
 def define_options() -> tuple[int,str]:
   max_results : int = 100
@@ -135,18 +150,16 @@ def define_options() -> tuple[int,str]:
   return (max_results, query)
 
 def main():
-  """Shows basic usage of the Gmail API.
-  Lists the user's Gmail labels.
-  """
+  emails_to_export : list[Email] = []
   creds = None
   # The file token.json stores the user's access and refresh tokens, and is
-  # created automatically when the authorization flow completes for the first
-  # time.
+  # created automatically when the authorization flow completes for the first time.
   if os.path.exists("token.json"):
     creds = Credentials.from_authorized_user_file("token.json", SCOPES)
   # If there are no (valid) credentials available, let the user log in.
   if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
+      os.remove("token.json")
       creds.refresh(Request())
     else:
       flow = InstalledAppFlow.from_client_secrets_file(
@@ -162,10 +175,8 @@ def main():
     service = build("gmail", "v1", credentials=creds)
     
     # request a list of all the messages 
-    result = service.users().messages().list(maxResults=5, userId='me', q='label:Bancos').execute() 
-    
-    # We can also pass maxResults to get any number of emails. Like this: 
-    # result = service.users().messages().list(maxResults=200, userId='me').execute() 
+    max_emails, search_query = set_options()
+    result = service.users().messages().list(maxResults=max_emails, userId='me', q=search_query).execute() 
     messages = result.get('messages') 
     
     # messages is a list of dictionaries where each dictionary contains a message id. 
@@ -187,24 +198,23 @@ def main():
 
       current_email.body = "Not decripted"
 
-      # Use try-except to avoid any Errors 
       try: 
         # The Body of the message is in Encrypted format. So, we have to decode it. 
         # Get the data and decode it with base 64 decoder. 
-
         encoded_body = msg_data['payload']['body']['data']
         decoded_body = base64.urlsafe_b64decode(encoded_body.encode('UTF-8'))
         current_email.body = BeautifulSoup(decoded_body, "lxml").text
         current_email.body = current_email.body.replace("&nbsp","\n")
-    
       except: 
         pass
-
       finally:
         # Printing the subject, sender's email and message 
         if ("scotiabank" in current_email.sender.lower()) and ("alerta transacción tarjeta" in current_email.subject.lower()):
           parse_email(current_email, "scotiabank")
+          emails_to_export.append(current_email)
           print(current_email)
+
+        export_emails_to_csv(emails_to_export)
 
   except HttpError as error:
     # TODO(developer) - Handle errors from gmail API.
