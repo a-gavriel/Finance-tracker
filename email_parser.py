@@ -1,6 +1,53 @@
 import re
 from datetime import datetime
 
+classification_list = {}
+
+def read_classification():
+  global classification_list
+  with open("classification.txt","r") as f:
+    lines = f.readlines()
+
+  current_class = ""
+  for line in lines:
+    line = line.strip().lower().replace("\n","")
+    if len(line) == 0:
+      pass
+    elif line[0] == "#":
+      pass
+    elif line.startswith("class:"):
+      current_class = f"temp{len(classification_list)+1}"
+      if len(line) > 6:
+        line = line[6:].strip()
+        if (len(line) != 0) and (line not in classification_list):
+          current_class = line
+
+      classification_list[current_class] = [[],[]]
+
+    elif line.startswith("include:"):
+      include_list = []
+      if len(line) > 8:
+        line = line[8:].strip()
+        if len(line) != 0:
+          include_list = line.split(",")
+          include_list = [i.strip() for i in include_list]
+
+      classification_list[current_class][0].extend(include_list)
+
+    elif line.startswith("exclude:"):
+      exclude_list = []
+      if len(line) > 8:
+        line = line[8:].strip()
+        if len(line) != 0:
+          exclude_list = line.split(",")
+          exclude_list = [i.strip() for i in exclude_list]
+
+      classification_list[current_class][1].extend(exclude_list)
+    else:
+      pass
+
+  return
+
 class Email:
   def __init__(self):
     self.sender : str = ""

@@ -222,4 +222,5 @@ def main():
 
 
 if __name__ == "__main__":
+  read_classification()
   main()

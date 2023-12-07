@@ -1,0 +1,14 @@
+# Example 1
+class: A
+include: walmart, pali, auto mercado
+exclude: 
+
+# Example 2
+class: B
+include: food
+exclude: 
+
+# Example 3
+class: 
+include: test
+exclude: 
