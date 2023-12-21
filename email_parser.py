@@ -53,6 +53,7 @@ class Email:
     self.sender : str = ""
     self.subject : str = ""
     self.date_str : str = ""
+    self.html_body : str = ""
     self.body : str = ""
     self.transaction_price_str : str = ""
     self.transaction_description : str = ""
@@ -63,11 +64,13 @@ class Email:
   @property
   def datetime(self):
       date_time = datetime.strptime(self.date_str, "%d %b %Y %H:%M:%S %z")
+      # TODO: offset timezone to -6
       return date_time.strftime("%Y-%m-%d_T%H-%M-%S")
 
   @property
   def date(self):
       date = datetime.strptime(self.date_str, "%d %b %Y %H:%M:%S %z")
+      # TODO: offset timezone to -6
       return date.strftime("%Y-%m-%d")
 
   def __repr__(self) -> str:
@@ -111,8 +114,12 @@ def parse_email(email : Email, bank : str)-> None:
   """
   if bank == "scotiabank":
     parse_fn = parse_scotiabank
+  elif bank == "bac":
+    # TODO: task pending
+    print("Error bank parser not developed")
+    return
   else:
-    raise Exception("Error bank not found")
+    raise Exception("Error bank parser not found")
   
   description, date, price = parse_fn(email.body)
   email.transaction_description = description

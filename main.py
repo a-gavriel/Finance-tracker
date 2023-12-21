@@ -34,6 +34,9 @@ def set_options() -> tuple[int,str]:
 
 def export_emails_to_csv(email_list : list[Email]) -> None:
   headers = ["Date", "Description", "Category", "Price"]
+  if email_list == []:
+    print("No data to export")
+    return
   with open('Emails_output.csv', 'w', newline='', encoding='utf-8') as f:
     csv_writer = csv.writer(f)
     csv_writer.writerow(headers)
@@ -193,29 +196,46 @@ def main():
           current_email.subject = d['value'] 
         if d['name'] == 'From': 
           current_email.sender = d['value'] 
-        if d['name'] == "Date":
+        if d['name'] == "X-Received":
           current_email.date_str = d['value']
+          current_email.date_str = current_email.date_str[current_email.date_str.rfind(";")+1:].strip()
+          current_email.date_str = current_email.date_str[:current_email.date_str.rfind("(")].strip()
 
-      current_email.body = "Not decripted"
+      current_email.body = "Not decrypted"
 
       try: 
         # The Body of the message is in Encrypted format. So, we have to decode it. 
-        # Get the data and decode it with base 64 decoder. 
-        encoded_body = msg_data['payload']['body']['data']
+        # Get the data and decode it with base 64 decoder.
+        if  msg_data['payload']['body']['size'] > 0:
+          encoded_body = msg_data['payload']['body']['data']
+        elif len(msg_data['payload']['parts']) > 0:
+          part_no = 0
+          if msg_data['payload']['parts'][0]['mimeType'] == "text/html":
+            part_no = 0
+          elif msg_data['payload']['parts'][1]['mimeType'] == "text/html":
+            part_no = 1
+          encoded_body = msg_data['payload']['parts'][part_no]['body']['data']
+          
+
         decoded_body = base64.urlsafe_b64decode(encoded_body.encode('UTF-8'))
-        current_email.body = BeautifulSoup(decoded_body, "lxml").text
+        current_email.html_body = BeautifulSoup(decoded_body, "lxml")
+        current_email.body = current_email.html_body.text
         current_email.body = current_email.body.replace("&nbsp","\n")
-        
       except: 
         pass
       finally:
-        # Printing the subject, sender's email and message 
+        append = True
         if ("scotiabank" in current_email.sender.lower()) and ("alerta transacción tarjeta" in current_email.subject.lower()):
           parse_email(current_email, "scotiabank")
-          emails_to_export.append(current_email)
-          print(current_email)
+        elif ("notificacionesbaccr" in current_email.sender.lower()) and ("notificación de transacción" in current_email.subject.lower()):
+          parse_email(current_email, "bac")
+        else:
+          append = False
 
-        export_emails_to_csv(emails_to_export)
+        if append:
+          emails_to_export.append(current_email)
+
+    export_emails_to_csv(emails_to_export)
 
   except HttpError as error:
     # TODO(developer) - Handle errors from gmail API.
