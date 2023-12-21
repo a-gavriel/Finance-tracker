@@ -20,7 +20,7 @@ def read_classification():
       if len(line) > 6:
         line = line[6:].strip()
         if (len(line) != 0) and (line not in classification_list):
-          current_class = line
+          current_class = line.title()
 
       classification_list[current_class] = [[],[]]
 
@@ -58,7 +58,8 @@ class Email:
     self.transaction_description : str = ""
     self.transaction_date_str : str = ""
     self.category : str = ""
-  
+    
+
   @property
   def datetime(self):
       date_time = datetime.strptime(self.date_str, "%d %b %Y %H:%M:%S %z")
@@ -79,9 +80,26 @@ class Email:
     text += "Category:\t" + self.category + "\n"
     return text
 
-def set_category(email : Email) -> None:
-  email.category = ""
-  return
+  def set_category(self) -> None:
+    description = " " + self.transaction_description.lower() + " "
+
+    for category, (include_words, exclude_words) in classification_list.items():
+      excluded = False
+      for word in exclude_words:
+        word = " " + word + " "
+        if excluded:
+          break
+        if word in description:
+          excluded = True
+          break
+      if not excluded:
+        for word in include_words:
+          word = " " + word + " "
+          if word in description:
+            self.category = category
+            return
+    self.category = ""
+    return
 
 def parse_email(email : Email, bank : str)-> None:
   """
@@ -100,7 +118,7 @@ def parse_email(email : Email, bank : str)-> None:
   email.transaction_description = description
   email.transaction_date_str = date
   email.transaction_price_str = price
-  set_category(email)
+  email.set_category()
   return 
 
 def parse_scotiabank(text : str) -> tuple[str, str, str]:

@@ -205,6 +205,7 @@ def main():
         decoded_body = base64.urlsafe_b64decode(encoded_body.encode('UTF-8'))
         current_email.body = BeautifulSoup(decoded_body, "lxml").text
         current_email.body = current_email.body.replace("&nbsp","\n")
+        
       except: 
         pass
       finally:
