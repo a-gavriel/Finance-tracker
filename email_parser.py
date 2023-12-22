@@ -63,13 +63,13 @@ class Email:
 
   @property
   def datetime(self):
-      date_time = datetime.strptime(self.date_str, "%d %b %Y %H:%M:%S %z")
+      date_time = datetime.strptime(self.date_str, "%a, %d %b %Y %H:%M:%S %z")
       # TODO: offset timezone to -6
       return date_time.strftime("%Y-%m-%d_T%H-%M-%S")
 
   @property
   def date(self):
-      date = datetime.strptime(self.date_str, "%d %b %Y %H:%M:%S %z")
+      date = datetime.strptime(self.date_str, "%a, %d %b %Y %H:%M:%S %z")
       # TODO: offset timezone to -6
       return date.strftime("%Y-%m-%d")
 
@@ -113,7 +113,7 @@ def parse_email(email : Email, bank : str)-> None:
     category : str
   """
   if bank == "scotiabank":
-    parse_fn = parse_scotiabank
+    parse_scotiabank(email)
   elif bank == "bac":
     # TODO: task pending
     print("Error bank parser not developed")
@@ -121,14 +121,11 @@ def parse_email(email : Email, bank : str)-> None:
   else:
     raise Exception("Error bank parser not found")
   
-  description, date, price = parse_fn(email.body)
-  email.transaction_description = description
-  email.transaction_date_str = date
-  email.transaction_price_str = price
   email.set_category()
   return 
 
-def parse_scotiabank(text : str) -> tuple[str, str, str]:
+def parse_scotiabank(email : Email) -> None:
+  text : str = email.body
   text = text.replace("&nbsp", " ")
 
   DESCRIPTION_PATTERN = "Scotiabank le notifica que la transacción realizada en .*, el día"
@@ -158,7 +155,9 @@ def parse_scotiabank(text : str) -> tuple[str, str, str]:
     finish = PRICE_PATTERN.index("*") - len(PRICE_PATTERN) + 1
     price = price_match[0][start:finish]
 
-  result = description, date, price
-  return result
+  email.transaction_description, email.transaction_date_str, \
+          email.transaction_price_str = description, date, price
+  
+  return 
 
 
