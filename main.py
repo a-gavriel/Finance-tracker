@@ -17,8 +17,12 @@ SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 
 def set_options() -> tuple[int,str]:
-  if True:
-    return 20,"label:Bancos"
+  # Here we define the default value for the options
+  result = (0, "")
+
+  # In case we hardwired the options, return
+  if (result[0] != 0) and (result[1] != ""):
+    return result
 
   while True:
     result = define_options()
@@ -47,10 +51,6 @@ def export_emails_to_csv(email_list : list[Email]) -> None:
 
 def define_options() -> tuple[int,str]:
   max_results : int = 100
-  read_option : str = ""
-  label_option : str = ""
-  filter_date_1 : str = ""
-  filter_date_2 : str = ""
   while True:
     try:
       max_results = int(input("Max results [max=500]:").strip())
@@ -61,94 +61,11 @@ def define_options() -> tuple[int,str]:
     except Exception:
       print("Invalid input. Please try again!")
 
-  while True:
-    try:
-      option = int(input("Filter (read[1] / unread[2] / any[3]):").strip())
-      if option == 1:
-        read_option = "is:read"
-      elif option == 2:
-        read_option = "is:unread"
-      elif option == 3:
-        read_option = ""
-      else:
-        raise Exception("Invalid input")
-      break
-    except ValueError:
-      print("Invalid input. Please try again!")
-  
-  while True:
-    try:
-      option = input("Filter by label? [y/n]:").lower().strip()
-      if (option[0] != 'y'):
-        break
-      else:
-        label_option = "label:" + input("Enter label name:").strip()
-      break
-    except ValueError:
-      print("Invalid input. Please try again!")
-
-  while True:
-    try:
-      print("Filtering by date can be done with: \n\t1)newer than n [d (days) / m (month)]\n\t2)after (date)")
-      option = int(input("Filter (newer than X [1] / after [2] / none [3]:").strip())
-      if option == 1:
-        option2 = input("Specify newer than <# of days>< d / m / y>  :").replace(" ","")
-        if re.match("\d+[dmy]", option2):
-          filter_date_1 = "newer_than:" + option2
-        else:
-          raise Exception("Invalid value")
-      elif option == 2:
-        option2 = input("Specify the day after which to search emails (yyyy/mm/dd):")
-        option2 = option2.replace("(", "").replace(")", "").replace(" ", "")
-        if re.match("\d{4}/\d{1,2}/\d{1,2}", option2):
-          filter_date_1 = "after:" + option2
-        else:
-          raise Exception("Invalid value")
-      elif option == 3:
-        filter_date_1 = ""
-      else:
-        raise Exception("Invalid value")
-      break
-    except ValueError:
-      print("Invalid input. Please try again!")
-  
-  while True:
-    try:
-      print("Filtering by date can be done with: \n\t1)older than n [d (days) / m (month)]\n\t2)before (date)")
-      option = int(input("Filter (older than X [1] / before [2] / none [3]:").strip())
-      if option == 1:
-        option2 = input("Specify older than: <# of days>< d / m / y>").replace(" ","")
-        if re.match("\d+[dmy]", option2):
-          filter_date_2 = "older_than:" + option2
-        else:
-          raise Exception("Invalid value")
-      elif option == 2:
-        option2 = input("Specify the day before which to search emails (yyyy/mm/dd):")
-        option2 = option2.replace("(", "").replace(")", "").replace(" ", "")
-        if re.match("\d{4}/\d{1,2}/\d{1,2}", option2):
-          filter_date_2 = "before:" + option2
-        else:
-          raise Exception("Invalid value")
-      elif option == 3:
-        filter_date_2 = ""
-      else:
-        raise Exception("Invalid value")
-      break
-    except ValueError:
-      print("Invalid input. Please try again!")
-
-  query = ""
-  if read_option:
-    query += (read_option + " ")
-  if label_option:
-    query += (label_option + " ")
-  if filter_date_1:
-    query += (filter_date_1 + " ")
-  if filter_date_2:
-    query += (filter_date_2 + " ")
-
-  if query[-1] == " ":
-    query = query[0:-1]  # Remove last space
+  print("\nPlease input the search query to use. " \
+        "\nExamples: 'label:Bancos from:amy@example.com  after:2020/04/16'" \
+        "\nCheck https://support.google.com/mail/answer/7190?hl=en on how to make a search query." \
+      )
+  query = input("\n>>> ")
     
   return (max_results, query)
 
