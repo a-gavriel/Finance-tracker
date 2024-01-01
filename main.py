@@ -37,6 +37,7 @@ def set_options() -> tuple[int,str]:
   return result
 
 def export_emails_to_csv(email_list : list[Email]) -> None:
+  print("Exporting", len(email_list), "transaction emails")
   headers = ["Date", "Description", "Category", "Price"]
   if email_list == []:
     print("No data to export")
@@ -47,6 +48,8 @@ def export_emails_to_csv(email_list : list[Email]) -> None:
     for email in email_list:
       temp_row = [email.date, email.transaction_description, email.category, email.transaction_price_str]
       csv_writer.writerow(temp_row)
+  
+  print("Finished exporting!\n")
   return
 
 def define_options() -> tuple[int,str]:
@@ -61,11 +64,13 @@ def define_options() -> tuple[int,str]:
     except Exception:
       print("Invalid input. Please try again!")
 
-  print("\nPlease input the search query to use. " \
-        "\nExamples: 'label:Bancos from:amy@example.com  after:2020/04/16'" \
-        "\nCheck https://support.google.com/mail/answer/7190?hl=en on how to make a search query." \
+  print("\nPlease input the search query to use." \
+        "\nTake into consideration that the search by date uses the timezone of UTC" \
+        "\nExample: 'label:Bancos from:amy@example.com  after:2020/04/16'" \
+        "\n - Bank emails: notificacion@notificacionesbaccr.com , AlertasScotiabank@scotiabank.com , bcrtarjestcta@bancobcr.com" \
+        "\n\nCheck https://support.google.com/mail/answer/7190?hl=en on how to make a search query." \
       )
-  query = input("\n>>> ")
+  query = input("\n\nSearch query:\n>>> ")
     
   return (max_results, query)
 
@@ -98,10 +103,13 @@ def main():
     max_emails, search_query = set_options()
     result = service.users().messages().list(maxResults=max_emails, userId='me', q=search_query).execute() 
     messages = result.get('messages') 
+    messages_len = len(messages)
+    print("Found", messages_len, "messages that match the search query\n")
     
     # messages is a list of dictionaries where each dictionary contains a message id. 
     # iterate through all the messages 
-    for msg in messages:       
+    for i,msg in enumerate(messages):
+      print(f"Parsing emails: {i+1}/{messages_len}", end="\r", flush=True)
       # Get the message from its id 
       msg_data = service.users().messages().get(userId='me', id=msg['id']).execute() 
 
@@ -152,6 +160,7 @@ def main():
         if append:
           emails_to_export.append(current_email)
 
+    print(f"Finished parsing {messages_len} emails\n")
     export_emails_to_csv(emails_to_export)
 
   except HttpError as error:

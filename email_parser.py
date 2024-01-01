@@ -115,14 +115,54 @@ def parse_email(email : Email, bank : str)-> None:
   if bank == "scotiabank":
     parse_scotiabank(email)
   elif bank == "bac":
-    # TODO: task pending
-    print("Error bank parser not developed")
-    return
+    parse_bac(email)
   else:
     raise Exception("Error bank parser not found")
   
   email.set_category()
   return 
+
+
+def parse_bac(email : Email) -> None:
+  text : str = email.body
+  text = text.replace("\r","")
+  while "\n\n" in text:
+    text = text.replace("\n\n\n\n","\n")
+    text = text.replace("\n\n\n","\n")
+    text = text.replace("\n\n","\n")
+
+  DESCRIPTION_PATTERN = "Comercio:\n.*\n"
+  DATE_PATTERN = "Fecha:\n.*\n"
+  PRICE_PATTERN = "Monto:\n.*\n"
+  description = ""
+  date = ""
+  price = ""
+  
+  description_match = re.findall(DESCRIPTION_PATTERN, text)
+  if description_match:
+    start = DESCRIPTION_PATTERN.index(".")
+    finish = DESCRIPTION_PATTERN.index("*") - len(DESCRIPTION_PATTERN) + 1
+    description = description_match[0][start:finish]
+    description = description.strip()
+
+  date_match = re.findall(DATE_PATTERN, text)
+  if date_match:
+    start = DATE_PATTERN.index(".")
+    finish = DATE_PATTERN.index("*") - len(DATE_PATTERN) + 1
+    date = date_match[0][start:finish]
+    date = date.strip()
+
+  price_match = re.findall(PRICE_PATTERN, text)
+  if price_match:
+    start = PRICE_PATTERN.index(".")
+    finish = PRICE_PATTERN.index("*") - len(PRICE_PATTERN) + 1
+    price = price_match[0][start:finish]
+    price = price.strip()
+
+  email.transaction_description, email.transaction_date_str, \
+          email.transaction_price_str = description, date, price
+  
+  return
 
 def parse_scotiabank(email : Email) -> None:
   text : str = email.body
