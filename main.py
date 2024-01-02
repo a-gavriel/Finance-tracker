@@ -154,6 +154,8 @@ def main():
           parse_email(current_email, "scotiabank")
         elif ("notificacionesbaccr" in current_email.sender.lower()) and ("notificación de transacción" in current_email.subject.lower()):
           parse_email(current_email, "bac")
+        elif ("bcrtarjestcta" in current_email.sender.lower()) and ("notificación de transacciones" in current_email.subject.lower()):
+          parse_email(current_email, "bcr")
         else:
           append = False
 

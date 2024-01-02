@@ -116,11 +116,42 @@ def parse_email(email : Email, bank : str)-> None:
     parse_scotiabank(email)
   elif bank == "bac":
     parse_bac(email)
+  elif bank == "bcr":
+    parse_bcr(email)
   else:
     raise Exception("Error bank parser not found")
   
   email.set_category()
   return 
+
+
+
+def parse_bcr(email : Email) -> None:
+  description = ""
+  date = ""
+  price = ""
+  
+  html_position = email.html_body.find("th", string="Fecha")
+  html_position = html_position.findNext("td") # Go to column 1
+  date = html_position.text
+  html_position = html_position.findNext("td").findNext("td").findNext("td") # Go to column 4
+  amount = html_position.text
+  html_position = html_position.findNext("td") # Go to column 5
+  currency = html_position.text
+  html_position = html_position.findNext("td") # Go to column 6
+  description = html_position.text
+  html_position = html_position.findNext("td") # Go to column 7
+  approved = html_position.text
+
+  if currency == "COLON COSTA RICA":
+    price = "CRC " + amount
+  elif currency == 'US DOLLAR':
+    price = "USD " + amount
+  
+  email.transaction_description, email.transaction_date_str, \
+          email.transaction_price_str = description, date, price
+  
+  return
 
 
 def parse_bac(email : Email) -> None:
